@@ -17,10 +17,6 @@ public class SemaphoreMozart extends Semaphore
 	public SemaphoreMozart(int maxNbrThread)
 	{
 		super(maxNbrThread);
-
-		// create an embedded space and construct a Capi instance for it
-//TODO		this.core = DefaultMzsCore.newInstance();
-//TODO		this.capi = new Capi(core);
 	}
 
 // -----------------------------------
@@ -29,7 +25,6 @@ public class SemaphoreMozart extends Semaphore
 
 	public void close()
 	{
-//TODO        core.shutdown(true);
 	}
 
 	public void acquire() throws InterruptedException

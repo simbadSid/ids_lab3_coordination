@@ -6,13 +6,14 @@ import java.util.LinkedList;
 
 
 
+
 public class SynchQueue <E>
 {
 // -----------------------------------
 // Attributes
 // -----------------------------------
-	private SemaphoreMozart		semaphoreProducer;
-	private SemaphoreMozart		semaphoreConsumer;
+	private SemaphoreMozart2	semaphoreProducer;
+	private SemaphoreMozart2	semaphoreConsumer;
 	private LinkedList<E>		queue;
 
 // -----------------------------------
@@ -20,9 +21,17 @@ public class SynchQueue <E>
 // -----------------------------------
 	public SynchQueue()
 	{
-		this.semaphoreProducer	= new SemaphoreMozart(1);
-		this.semaphoreConsumer	= new SemaphoreMozart(0);
-		this.queue				= new LinkedList<E>();
+		try
+		{
+			this.semaphoreProducer	= new SemaphoreMozart2(1);
+			this.semaphoreConsumer	= new SemaphoreMozart2(0);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			System.exit(0);
+		}
+		this.queue = new LinkedList<E>();
 	}
 
 // -----------------------------------

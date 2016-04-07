@@ -1,5 +1,7 @@
 package semaphore;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -14,6 +16,7 @@ import org.mozartspaces.core.MzsCore;
 import org.mozartspaces.core.MzsCoreException;
 import org.mozartspaces.core.TransactionReference;
 import org.mozartspaces.core.MzsConstants.RequestTimeout;
+import org.mozartspaces.core.config.Configuration;
 
 
 
@@ -24,52 +27,57 @@ public class SemaphoreMozart2 extends Semaphore
 {
 	private static final long serialVersionUID = 1L;
 
-	// -----------------------------------
+// -----------------------------------
 // Attributes
 // -----------------------------------
-	private static long nbrCreatedSemaphore = 0;
+	private static int			nbrCreatedSemaphore	= 0;
+	private static final int	defaultPort			= 2222;
 
 	private int						nbrFreeSlot;
-	private MzsCore					core;
+	private String					containerName;
+	private int						port;
+private static MzsCore					core;
 	private Capi					capi;
 	private ContainerReference		container;
-	private String					containerName;
 	private TransactionReference	transaction;
 
 // -----------------------------------
 // Builder
 // -----------------------------------
-	public SemaphoreMozart2(int nbrFreeSlot) throws MzsCoreException
+	public SemaphoreMozart2(int nbrFreeSlot) throws MzsCoreException, URISyntaxException
 	{
 		super(nbrFreeSlot);
 		this.nbrFreeSlot	= nbrFreeSlot;
-		this.containerName	= this.newContainerName();
+		this.initLocalConfig();
 
-        List<FifoCoordinator> coords = Collections.singletonList(new FifoCoordinator());
+		List<FifoCoordinator> coords = Collections.singletonList(new FifoCoordinator());
+		// Create an embedded space and construct a Capi instance for it
+if (SemaphoreMozart2.core == null)
+{
+	SemaphoreMozart2.core = DefaultMzsCore.newInstance();
+}
 
-		// create an embedded space and construct a Capi instance for it
-		this.core			= DefaultMzsCore.newInstance();
 		this.capi			= new Capi(core);
-        this.container		= capi.createContainer(this.containerName, null, 10, coords, null, transaction);
-        this.transaction	= capi.createTransaction(5000, null);
+		this.container		= capi.createContainer(this.containerName, null, 1000, coords, null, transaction);
+		this.transaction	= capi.createTransaction(RequestTimeout.INFINITE, null);
+System.out.println("**** Space = " + core.getConfig().getSpaceUri());
 	}
 
 // -----------------------------------
 // Local methods
 // -----------------------------------
-
 	public void close()
 	{
 		core.shutdown(true);
 	}
 
-	public synchronized void acquire() throws InterruptedException
+	public void acquire() throws InterruptedException
 	{
 		List<FifoSelector> selectors = Collections.singletonList(FifoCoordinator.newSelector());
 
 		try
 		{
-			capi.read(container, selectors, 1000, null);
+			capi.read(container, selectors, RequestTimeout.INFINITE, null);
 		}
 		catch (MzsCoreException e)
 		{
@@ -78,7 +86,7 @@ public class SemaphoreMozart2 extends Semaphore
 		}
 	}
 
-	public synchronized void release()
+	public void release()
 	{
 		this.nbrFreeSlot ++;
 		if (this.nbrFreeSlot <= 0) return;
@@ -98,11 +106,11 @@ public class SemaphoreMozart2 extends Semaphore
 // -----------------------------------
 // Private methods
 // -----------------------------------
-	private String newContainerName()
+	private void initLocalConfig()
 	{
-		String res = "" + SemaphoreMozart2.nbrCreatedSemaphore;
+		this.containerName	= "" + SemaphoreMozart2.nbrCreatedSemaphore;
+		this.port			= SemaphoreMozart2.defaultPort + SemaphoreMozart2.nbrCreatedSemaphore;
 
 		SemaphoreMozart2.nbrCreatedSemaphore ++;
-		return res;
 	}
 }
